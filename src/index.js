@@ -1,8 +1,7 @@
 import { Hono } from "hono";
 
 import auth from "./routes/auth";
-// import { chat } from "./routes/chat";
-// import { tasklist } from "./routes/tasklist";
+import chat from "./routes/chat";
 
 const app = new Hono();
 
@@ -11,7 +10,6 @@ app.get("/", (c) => {
 });
 
 app.route("/auth", auth);
-// app.use("/chat/*", chat);
-// app.use("/tasklist/*", tasklist);
+app.route("/chat", chat);
 
 export default app;

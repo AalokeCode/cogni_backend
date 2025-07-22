@@ -4,6 +4,7 @@
     "dev": "bun run --hot src/index.js"
   },
   "dependencies": {
+    "@google/genai": "^1.10.0",
     "@prisma/client": "^6.12.0",
     "hono": "^4.8.5",
     "prisma": "^6.12.0"

@@ -27,6 +27,21 @@ app.post("/session", async (c) => {
   });
 });
 
+app.get("/session/:id", async (c) => {
+  const sessionId = c.req.param("id");
+  if (!sessionId) {
+    throw new HTTPException(400, { message: "Session ID is required" });
+  }
+  const session = await prisma.chatSession.findUnique({
+    where: { id: sessionId },
+    include: { messages: true },
+  });
+  if (!session) {
+    throw new HTTPException(404, { message: "Chat session not found" });
+  }
+  return c.json(session);
+});
+
 app.post("/", async (c) => {
   const { sessionId, message } = await c.req.json();
   if (!sessionId || !message) {
@@ -60,7 +75,7 @@ app.post("/", async (c) => {
     ]
     }
 
-    Do not include any Markdown or extra text. Only return valid JSON.
+        Return only the JSON object, no markdown, no code blocks, no extra text. Only return valid JSON.
     `;
   const response = await ai.models.generateContent({
     model: "gemini-2.0-flash",
@@ -69,19 +84,27 @@ app.post("/", async (c) => {
     temperature: 0.5,
   });
 
-  const chatMessage = await prisma.chatMessage.create({
-    data: {
-      sessionId: session.id,
-      role: "ai",
-      content: response.text,
-    },
-  });
+  const jsonMatch = response.text.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    const jsonData = JSON.parse(jsonMatch[0]);
+    const chatMessage = await prisma.chatMessage.create({
+      data: {
+        sessionId: session.id,
+        role: "ai",
+        content: JSON.stringify(jsonData),
+      },
+    });
 
-  return c.json({
-    message: "Response generated successfully",
-    userMessage,
-    aiMessage: chatMessage,
-  });
+    return c.json({
+      message: "Response generated successfully",
+      userMessage,
+      aiMessage: JSON.stringify(jsonData),
+    });
+  } else {
+    throw new HTTPException(500, {
+      message: "Failed to parse AI response",
+    });
+  }
 });
 
 export default app;

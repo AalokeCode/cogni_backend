@@ -89,7 +89,15 @@ app.get("/:id", async (c) => {
     include: {
       sections: {
         include: {
-          topics: true,
+          topics: {
+            select: {
+              id: true,
+              title: true,
+              completed: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
         },
       },
     },
@@ -101,29 +109,63 @@ app.get("/:id", async (c) => {
 });
 
 app.post("/complete/:id", async (c) => {
-  const taskId = c.req.param("id");
+  const topicId = c.req.param("id");
   try {
-    const checkTask = await prisma.task.findUnique({
-      where: { id: taskId },
+    const checkTopic = await prisma.topic.findUnique({
+      where: { id: topicId },
     });
-    if (!checkTask) {
-      throw new HTTPException(404, { message: "Task not found" });
+    if (!checkTopic) {
+      throw new HTTPException(404, { message: "Topic not found" });
     }
-    const updatedTask = await prisma.task.update({
-      where: { id: taskId },
+    const updatedTopic = await prisma.topic.update({
+      where: { id: topicId },
       data: { completed: true },
     });
     return c.json({
-      message: "Task marked as complete",
-      task: {
-        id: updatedTask.id,
-        title: updatedTask.title,
-        completed: updatedTask.completed,
+      message: "Topic marked as complete",
+      topic: {
+        id: updatedTopic.id,
+        title: updatedTopic.title,
+        completed: updatedTopic.completed,
       },
     });
   } catch (err) {
-    console.error("Error completing task:", err);
-    throw new HTTPException(500, { message: "Failed to complete task" });
+    console.error("Error completing topic:", err);
+    throw new HTTPException(500, { message: "Failed to complete topic" });
+  }
+});
+
+app.delete("/:id", async (c) => {
+  const topicListId = c.req.param("id");
+  const authHeader = c.req.header("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    throw new HTTPException(401, {
+      message: "Authorization header is required",
+    });
+  }
+  const token = authHeader.split(" ")[1];
+  const decoded = await verify(token, process.env.JWT_SECRET);
+  const userId = decoded?.userId;
+  if (!userId) {
+    throw new HTTPException(400, { message: "User ID is required" });
+  }
+  if (!topicListId) {
+    throw new HTTPException(400, { message: "Topic list ID is required" });
+  }
+  try {
+    const deletedTopicList = await prisma.topicList.delete({
+      where: {
+        id: topicListId,
+        userId: userId,
+      },
+    });
+    return c.json({
+      message: "Topic list deleted successfully",
+      topicListId: deletedTopicList.id,
+    });
+  } catch (err) {
+    console.error("Error deleting topic list:", err);
+    throw new HTTPException(500, { message: "Failed to delete topic list" });
   }
 });
 

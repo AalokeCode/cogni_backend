@@ -1,7 +1,7 @@
 {
   "name": "cogni_backend",
   "scripts": {
-    "dev": "bun run --hot src/index.js"
+    "dev": "node src/index.js"
   },
   "dependencies": {
     "@google/genai": "^1.10.0",
@@ -10,6 +10,6 @@
     "prisma": "^6.12.0"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    
   }
 }
